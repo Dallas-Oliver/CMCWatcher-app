@@ -1,7 +1,8 @@
 const { App } = require("@slack/bolt");
 require('dotenv').config();
-const serviceHost = "http://localhost:3000"
 const port = 8001;
+
+const serviceHost = "http://localhost:3000"
 const ServiceClient = require("./service-client")
 const serviceClient = new ServiceClient(serviceHost);
 
@@ -50,32 +51,6 @@ app.command("/pricequote", async ({ command, ack, say }) => {
     } else {
         await say(serviceResponse[1]);
     }
-
-
-})
-
-app.message("~Bitcoin-price", async ({message, say}) => {
-    const serviceResponse = await serviceClient.getLatestCoinData("bitcoin");
-    await say({
-        "blocks": [
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": `*Bitcoin Price:* $${serviceResponse[0].quote.USD.price}.`
-                }
-            },
-            {
-                "type": "section",
-                "block_id": "section567",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "<https://coinmarketcap.com/>\n *Today's Cryptocurrency Prices by Market Cap.*"
-                }
-            },
-
-        ]
-    })
 });
 
 (async () => {

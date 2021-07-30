@@ -17,6 +17,8 @@ class ServiceClient {
 
             const name = json["coinData"][0].name
             const price = json["coinData"][0].quote.USD.price;
+
+
             const supply = json["coinData"][0].total_supply
             const lastupdated = json["coinData"][0].last_updated;
             const logoUrl =  json["logoJson"].data[Object.keys(json["logoJson"].data)[0]].logo
@@ -26,6 +28,10 @@ class ServiceClient {
             console.log(err)
             return [false, `Could not find info on that coin. Check your spelling!`];
         }
+    }
+
+    format = (price) => {
+        
     }
 }
 
