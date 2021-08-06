@@ -1,14 +1,10 @@
 const { App } = require("@slack/bolt");
-const { default: fetch } = require("node-fetch");
 require('dotenv').config();
 const port = 8001;
 
 const serviceHost = "http://localhost:3000"
 const ServiceClient = require("./service-client")
 const serviceClient = new ServiceClient(serviceHost);
-
-
-const slackHost = "https://slack.com/api"
 
 const app = new App({
     token: process.env.SLACK_BOT_TOKEN,
@@ -17,8 +13,57 @@ const app = new App({
     appToken:process.env.SLACK_APP_TOKEN
 });
 
+app.message("hey there", async ({say}) => {
+    await say({
+        "blocks": [
+            {
+                "type": "divider"
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "press this button if you dare!!! :ghost:"
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": ":skull_and_crossbones:",
+                        "emoji": true
+                    },
+                    "action_id": "actionId-0"
+                }
+            }
+        ]
+    })
+})
+
+app.action("actionId-0", async ({say}) => {
+    await say({
+        "blocks": [
+            {
+                "type": "divider"
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Relax, its just a cat."
+                },
+                "accessory": {
+                    "type": "image",
+                    "image_url": "https://pbs.twimg.com/profile_images/625633822235693056/lNGUneLX_400x400.jpg",
+                    "alt_text": "cute cat"
+                }
+            }
+        ]
+    })
+});
+
 app.command("/pricequote", async ({ command, ack, say }) => {
     ack();
+    console.log(command)
     const serviceResponse = await serviceClient.getLatestCoinData(command.text);
 
     if (serviceResponse[0]) {
@@ -93,53 +138,128 @@ app.command("/list", async ({ command, ack, say }) => {
     }
 });
 
-
-
-app.command("/greendot", async ({ command, ack, say }) => {
+app.shortcut("greendot123", async ({ack, body}) => {
     ack();
-    console.log(command)
-
-    const url = `${slackHost}/dialog.open`;
-
-    const formJson = {
-        "callback_id": "ryde-46e2b0",
-        "title": "Request a Ride",
-        "submit_label": "Request",
-        "state": "Limo",
-        "elements": [
-          {
-            "type": "text",
-            "label": "Pickup Location",
-            "name": "loc_origin"
-          },
-          {
-            "type": "text",
-            "label": "Dropoff Location",
-            "name": "loc_destination"
-          }
-        ]
-      }
+    const view = JSON.stringify({
+                "type": "modal",
+                "title": {
+                    "type": "plain_text",
+                    "text": "Schedule a greendot"
+                },
+                "submit": {
+                    "type": "plain_text",
+                    "text": "Create"
+                },
+                "blocks": [
+                    {
+                        "type": "input",
+                        "block_id": "name_block",
+                        "label": {
+                            "type": "plain_text",
+                            "text": "name the greendot",
+                            "emoji": true
+                        },
+                        "optional": false,
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "greendot_name"
+                        }
+                    },
+                    {
+                        "type": "input",
+                        "block_id": "desc_block",
+                        "label": {
+                            "type": "plain_text",
+                            "text": "What are we going to discuss?",
+                            "emoji": true
+                        },
+                        "optional": false,
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "desc"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "block_id": "date_block",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Pick a date for the greendot."
+                        },
+                        "accessory": {
+                            "type": "datepicker",
+                            "initial_date": "2077-04-28",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "Select a date",
+                                "emoji": true
+                            },
+                            "action_id": "datepicker"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "block_id": "time_block",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "At what time?"
+                        },
+                        "accessory": {
+                            "type": "timepicker",
+                            "initial_time": "13:37",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "Select time",
+                                "emoji": true
+                            },
+                            "action_id": "timepicker"
+                        }
+                    }
+                ],
+                "private_metadata": "Shh it is a secret",
+                "callback_id": "greendot_submitted",
+                "external_id": "",
+                "clear_on_close": false,
+                "notify_on_close": false,
+            });
 
     try {
-        const response = await fetch(url, {
-            method: "POST",
-            dialog: JSON.stringify(formJson),
-            trigger_id: command.trigger_id,
-            headers: {
-                'Authorization': `Bearer ${process.env.SLACK_USER_TOKEN}`
-            }
-        })
-    
-        const json = await response.json();
-        console.log(json);
+        await app.client.views.open({
+            view: view,
+            trigger_id: body.trigger_id,
+            token: process.env.SLACK_USER_TOKEN
+        });
+
+
     } catch (err) {
-        say(`there was an error: ${err}`)
+        console.log(`there was an error: ${err}`)
     }
 });
 
+app.view("greendot_submitted", async (req) => {
+    req.ack();
+    const greendotName = req.payload.state.values.name_block.greendot_name.value;
+    const date = req.payload.state.values.date_block.datepicker.selected_date;
+    const time = req.payload.state.values.time_block.timepicker.selected_time;
+    const user = req.body.user.id;
+    try {
 
 
-
+        await app.client.chat.postMessage({
+            token: process.env.SLACK_USER_TOKEN,
+            channel: "C02A2K73W8L",
+            blocks: [{
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": `<!here> \n <@${user}> created a greendot: *${greendotName}*, scheduled for ${time} on ${date}`
+                }
+            }]
+        });
+    } catch (err) {
+        console.log(err)
+    }
+});
 
 (async () => {
     await app.start(port)
