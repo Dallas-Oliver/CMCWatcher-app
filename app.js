@@ -1,4 +1,5 @@
 const { App } = require("@slack/bolt");
+const e = require("express");
 require('dotenv').config();
 const port = 8001;
 
@@ -256,16 +257,22 @@ app.shortcut("greendot123", async ({ack, body}) => {
 
 app.view("greendot_submitted", async (req) => {
     req.ack();
-    console.log(req.body.payload);
+    console.log(req.body);
     const greendotName = req.payload.state.values.name_block.greendot_name.value;
     const date = req.payload.state.values.date_block.datepicker.selected_date;
     const time = req.payload.state.values.time_block.timepicker.selected_time;
     const user = req.body.user.id;
+
     try {
+
+        const users = await app.client.users.list({
+            token: process.env.SLACK_USER_TOKEN
+        });
+        console.log(users);
 
         await app.client.chat.postMessage({
             token: process.env.SLACK_USER_TOKEN,
-            channel: "C02A2K73W8L",
+            channel: "C029KCPJ820",
             blocks: [{
                 "type": "section",
                 "text": {
