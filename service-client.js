@@ -62,8 +62,11 @@ class ServiceClient {
 
     }
 
-    formatPrice = (price) => {
+    getNasaPOTD = async () => {
+        const response = await fetch(`${this.host}/potd`, {"method": "GET"});
 
+        const json = await response.json();
+        return json;
     }
 }
 

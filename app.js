@@ -14,147 +14,6 @@ const app = new App({
     appToken:process.env.SLACK_APP_TOKEN
 });
 
-// // app.message("hey there", async ({say}) => {
-//     await say({
-//         "blocks": [
-//             {
-//                 "type": "divider"
-//             },
-//             {
-//                 "type": "section",
-//                 "text": {
-//                     "type": "mrkdwn",
-//                     "text": "press this button if you dare!!! :ghost:"
-//                 },
-//                 "accessory": {
-//                     "type": "button",
-//                     "text": {
-//                         "type": "plain_text",
-//                         "text": ":skull_and_crossbones:",
-//                         "emoji": true
-//                     },
-//                     "action_id": "actionId-0"
-//                 }
-//             }
-//         ]
-//     })
-// })
-
-// app.action("actionId-0", async ({say}) => {
-//     await say({
-//         "blocks": [
-//             {
-//                 "type": "divider"
-//             },
-//             {
-//                 "type": "section",
-//                 "text": {
-//                     "type": "mrkdwn",
-//                     "text": "Relax, its just a cat."
-//                 },
-//                 "accessory": {
-//                     "type": "image",
-//                     "image_url": "https://pbs.twimg.com/profile_images/625633822235693056/lNGUneLX_400x400.jpg",
-//                     "alt_text": "cute cat"
-//                 }
-//             }
-//         ]
-//     })
-// });
-
-// app.command("/pricequote", async ({ command, ack, say }) => {
-//     ack();
-//     console.log(command)
-//     const serviceResponse = await serviceClient.getLatestCoinData(command.text);
-
-//     if (serviceResponse[0]) {
-//         await say({
-//             "blocks": [
-//                 {
-//                     "type": "divider"
-//                 },
-//                 {
-//                     "type": "section",
-//                     "text": {
-//                         "type": "mrkdwn",
-//                         "text": serviceResponse[1]
-//                     },
-//                     "accessory": {
-//                         "type": "image",
-//                         "image_url": `${serviceResponse[2]}`,
-//                         "alt_text": "logo"
-//                     }
-//                 },
-//                 {
-//                     "type": "section",
-//                     "block_id": "section567",
-//                     "text": {
-//                       "type": "mrkdwn",
-//                       "text": "<https://coinmarketcap.com/>\n *Today's Cryptocurrency Prices by Market Cap.*"
-//                     }
-//                 }
-//             ]
-//         })
-//     } else {
-//         await say(serviceResponse[1]);
-//     }
-// });
-
-// app.command("/list", async ({ command, ack, say }) => {
-//     ack();
-//     const args = command.text.split(" ");
-
-//     const serviceResponse = await serviceClient.getTopTen(args[0], args[1], args[2]);
-
-//     if (serviceResponse[0]) {
-//         if (Array.isArray(serviceResponse[1])) {
-//             const blocks = serviceResponse[1].map(dataString => {
-//                 return {
-//                     "type": "divider"
-//                 },
-//                 {
-//                     "type": "section",
-//                     "text": {
-//                         "type": "mrkdwn",
-//                         "text": dataString
-//                     },
-//                 }
-//             });
-            
-//             await say({
-//                 "blocks": [...blocks, {
-//                     "type": "section",
-//                     "block_id": "section567",
-//                     "text": {
-//                         "type": "mrkdwn",
-//                         "text": "<https://coinmarketcap.com/>\n *Today's Cryptocurrency Prices by Market Cap.*"
-//                     }
-//                 }]
-//             });
-//         } else {
-//             say("thing wasn't right")
-//         }
-//     } else {
-//         await say(serviceResponse[1]);
-//     }
-// });
-
-const getFormattedDateString = () => {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const day = date.getDate();
-
-    return `${year}-${month + 1}-${day}`;
-}
-
-const getFormmatedTimeString = () => {
-    const date = new Date();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    return `${hours}:${minutes}`;
-}
 
 app.shortcut("greendot123", async ({ack, body}) => {
     ack();
@@ -268,7 +127,10 @@ app.view("greendot_submitted", async (req) => {
         const users = await app.client.users.list({
             token: process.env.SLACK_USER_TOKEN
         });
-        console.log(users);
+        console.log(users.members);
+
+        const usersList = users.members.map(user => user.name);
+        console.log(usersList);
 
         await app.client.chat.postMessage({
             token: process.env.SLACK_USER_TOKEN,
@@ -277,13 +139,19 @@ app.view("greendot_submitted", async (req) => {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": `<!here> \n <@${user}> created a greendot: *${greendotName}*, scheduled for ${time} on ${date}`
+                    "text": `<!here> \n <${user}> created a greendot: *${greendotName}*, scheduled for ${time} on ${date}`
                 }
             }]
         });
     } catch (err) {
         console.log(err)
     }
+});
+
+app.command("/potd", async ({say, ...req}) => {
+    const response = await serviceClient.getNasaPOTD();
+    console.log(response)
+
 });
 
 (async () => {
